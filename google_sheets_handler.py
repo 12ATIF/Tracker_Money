@@ -22,6 +22,14 @@ class SheetsManager:
         self.service = build('sheets', 'v4', credentials=creds)
         self.sheet = self.service.spreadsheets()
     
+    @staticmethod
+    def _safe_float(value):
+        """Konversi aman ke float"""
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
+
     def test_connection(self):
         """Test koneksi ke spreadsheet"""
         try:
@@ -77,7 +85,7 @@ class SheetsManager:
                     'name': row[1],
                     'type': row[2],
                     'icon': row[3],
-                    'budget_limit': float(row[4]) if row[4] else 0,
+                    'budget_limit': self._safe_float(row[4]),
                     'keywords': [k.strip().lower() for k in row[5].split(',')]
                 })
         
@@ -142,7 +150,7 @@ class SheetsManager:
                     row[5] == category_name and 
                     tx_month == current_month):
                     
-                    total_spent += float(row[4])
+                    total_spent += self._safe_float(row[4])
         
         return {
             'category': category_name,
@@ -171,7 +179,7 @@ class SheetsManager:
                         'timestamp': row[1],
                         'user_id': row[2],
                         'type': row[3],
-                        'amount': float(row[4]),
+                        'amount': self._safe_float(row[4]),
                         'category': row[5],
                         'description': row[6]
                     })
@@ -197,7 +205,7 @@ class SheetsManager:
                         'timestamp': row[1],
                         'user_id': row[2],
                         'type': row[3],
-                        'amount': float(row[4]),
+                        'amount': self._safe_float(row[4]),
                         'category': row[5],
                         'description': row[6]
                     })
@@ -225,7 +233,7 @@ class SheetsManager:
                 
                 if str(row[2]) == str(user_id) and tx_month == year_month:
                     tx_type = row[3]
-                    amount = float(row[4])
+                    amount = self._safe_float(row[4])
                     category = row[5]
                     
                     transaction_count += 1
@@ -315,9 +323,9 @@ class SheetsManager:
         
         days_passed = datetime.now().day
         
-        total_expense = sum([float(row[4]) for row in current_month_txs if row[3] == 'expense'])
-        total_income = sum([float(row[4]) for row in current_month_txs if row[3] == 'income'])
-        total_saving = sum([float(row[4]) for row in current_month_txs if row[3] == 'saving'])
+        total_expense = sum([self._safe_float(row[4]) for row in current_month_txs if row[3] == 'expense'])
+        total_income = sum([self._safe_float(row[4]) for row in current_month_txs if row[3] == 'income'])
+        total_saving = sum([self._safe_float(row[4]) for row in current_month_txs if row[3] == 'saving'])
         
         avg_daily_expense = total_expense / days_passed if days_passed > 0 else 0
         avg_daily_income = total_income / days_passed if days_passed > 0 else 0
@@ -328,7 +336,7 @@ class SheetsManager:
         for row in current_month_txs:
             if row[3] == 'expense':
                 cat = row[5]
-                category_expenses[cat] = category_expenses.get(cat, 0) + float(row[4])
+                category_expenses[cat] = category_expenses.get(cat, 0) + self._safe_float(row[4])
         
         top_category = max(category_expenses, key=category_expenses.get) if category_expenses else '-'
         
@@ -336,7 +344,7 @@ class SheetsManager:
         
         last_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         last_month_expense = sum([
-            float(row[4]) 
+            self._safe_float(row[4]) 
             for row in all_user_txs 
             if row[3] == 'expense' and datetime.fromisoformat(row[1]).strftime('%Y-%m') == last_month
         ])

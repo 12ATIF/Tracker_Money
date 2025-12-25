@@ -52,7 +52,15 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        amount = int(parts[0].replace('.', '').replace(',', ''))
+        try:
+            amount = int(parts[0].replace('.', '').replace(',', ''))
+        except ValueError:
+            await update.message.reply_text(
+                "❌ Jumlah harus berupa angka!\n\nContoh: `/pengeluaran 50000 makan siang`",
+                parse_mode='Markdown'
+            )
+            return
+
         description = parts[1]
         user_id = update.effective_user.id
         
@@ -108,13 +116,9 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(response.strip(), parse_mode='Markdown')
         
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Jumlah harus berupa angka!\n\nContoh: `/pengeluaran 50000 makan siang`",
-            parse_mode='Markdown'
-        )
+        
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(f"❌ Terjadi kesalahan sistem.\nError: {str(e)}")
         print(f"Error in add_expense: {e}")
 
 async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -129,7 +133,15 @@ async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        amount = int(parts[0].replace('.', '').replace(',', ''))
+        try:
+            amount = int(parts[0].replace('.', '').replace(',', ''))
+        except ValueError:
+            await update.message.reply_text(
+                "❌ Jumlah harus berupa angka!\n\nContoh: `/pemasukan 5000000 gaji`",
+                parse_mode='Markdown'
+            )
+            return
+
         description = parts[1]
         user_id = update.effective_user.id
         
@@ -170,13 +182,8 @@ async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(response.strip(), parse_mode='Markdown')
         
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Jumlah harus berupa angka!\n\nContoh: `/pemasukan 5000000 gaji`",
-            parse_mode='Markdown'
-        )
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(f"❌ Terjadi kesalahan sistem.\nError: {str(e)}")
         print(f"Error in add_income: {e}")
 
 async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -191,7 +198,15 @@ async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        amount = int(parts[0].replace('.', '').replace(',', ''))
+        try:
+            amount = int(parts[0].replace('.', '').replace(',', ''))
+        except ValueError:
+            await update.message.reply_text(
+                "❌ Jumlah harus berupa angka!\n\nContoh: `/nabung 500000 tabungan`",
+                parse_mode='Markdown'
+            )
+            return
+
         description = parts[1]
         user_id = update.effective_user.id
         
@@ -228,13 +243,8 @@ Hebat! Terus konsisten menabung! 💪
         
         await update.message.reply_text(response.strip(), parse_mode='Markdown')
         
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Jumlah harus berupa angka!\n\nContoh: `/nabung 500000 tabungan`",
-            parse_mode='Markdown'
-        )
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(f"❌ Terjadi kesalahan sistem.\nError: {str(e)}")
         print(f"Error in add_saving: {e}")
 
 async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
