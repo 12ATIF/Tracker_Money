@@ -556,22 +556,33 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 4. SET NEW CATEGORY
     elif data.startswith('set_cat|'):
-        new_cat = data.split('|')[1]
-        trx = context.user_data.get('pending_trx')
-        if trx:
-            trx['category'] = new_cat
-            # Re-confirm
-            keyboard = [
-                [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
-                [InlineKeyboardButton("✏️ Ganti Kategori", callback_data='edit_category')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
+        try:
+            new_cat = data.split('|')[1]
+            trx = context.user_data.get('pending_trx')
             
-            await query.edit_message_text(
-                f"🔄 Kategori diubah jadi: *{new_cat}*\n\nSimpan sekarang?",
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
+            if trx:
+                trx['category'] = new_cat
+                # Re-confirm
+                keyboard = [
+                    [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
+                    [InlineKeyboardButton("✏️ Ganti Kategori", callback_data='edit_category')],
+                     [InlineKeyboardButton("❌ Batal", callback_data='cancel_trx')]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                # Escape markdown special characters for category name
+                safe_cat = new_cat.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+                
+                await query.edit_message_text(
+                    f"🔄 Kategori diubah jadi: *{safe_cat}*\n\nSimpan sekarang?",
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.edit_message_text("❌ Sesi transaksi telah berakhir. Silakan input ulang.")
+        except Exception as e:
+            print(f"Error setting category: {e}")
+            await query.edit_message_text(f"❌ Error: {str(e)}")
     
 
 # ==================== MAIN ====================
