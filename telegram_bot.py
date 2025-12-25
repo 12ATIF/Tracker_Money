@@ -1,6 +1,7 @@
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.request import HTTPXRequest
+from telegram.error import BadRequest
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -502,7 +503,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == 'confirm_trx':
         trx = context.user_data.get('pending_trx')
         if not trx:
-            await query.edit_message_text("❌ Data transaksi kadaluarsa.")
+            try:
+                await query.edit_message_text("❌ Data transaksi kadaluarsa.")
+            except BadRequest as e:
+                if "Message is not modified" not in str(e):
+                    raise
             return
 
         # Simpan ke Sheets
@@ -526,15 +531,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  elif budget_info['percentage'] > 80:
                      budget_msg = f"\n💡 Sisa Budget: Rp {remaining:,}"
 
-        await query.edit_message_text(
-            f"✅ *Tersimpan!*\n\n{trx['description']}\nRp {trx['amount']:,}\n📂 {trx['category']}{budget_msg}", 
-            parse_mode='Markdown'
-        )
+        try:
+            await query.edit_message_text(
+                f"✅ *Tersimpan!*\n\n{trx['description']}\nRp {trx['amount']:,}\n📂 {trx['category']}{budget_msg}", 
+                parse_mode='Markdown'
+            )
+        except BadRequest as e:
+            if "Message is not modified" not in str(e):
+                raise
         context.user_data.pop('pending_trx', None)
 
     # 2. CANCEL
     elif data == 'cancel_trx':
-        await query.edit_message_text("❌ Transaksi dibatalkan.")
+        try:
+            await query.edit_message_text("❌ Transaksi dibatalkan.")
+        except BadRequest as e:
+            if "Message is not modified" not in str(e):
+                raise
         context.user_data.pop('pending_trx', None)
 
     # 3. EDIT CATEGORY (Request List)
@@ -552,7 +565,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if row: keyboard.append(row)
             
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("📂 Pilih Kategori Baru:", reply_markup=reply_markup)
+        try:
+            await query.edit_message_text("📂 Pilih Kategori Baru:", reply_markup=reply_markup)
+        except BadRequest as e:
+                if "Message is not modified" not in str(e):
+                    raise
 
     # 4. SET NEW CATEGORY
     elif data.startswith('set_cat|'):
@@ -573,13 +590,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Escape markdown special characters for category name
                 safe_cat = new_cat.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
                 
-                await query.edit_message_text(
-                    f"🔄 Kategori diubah jadi: *{safe_cat}*\n\nSimpan sekarang?",
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup
-                )
+                try:
+                    await query.edit_message_text(
+                        f"🔄 Kategori diubah jadi: *{safe_cat}*\n\nSimpan sekarang?",
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
+                except BadRequest as e:
+                    if "Message is not modified" not in str(e):
+                        raise
             else:
-                await query.edit_message_text("❌ Sesi transaksi telah berakhir. Silakan input ulang.")
+                try:
+                    await query.edit_message_text("❌ Sesi transaksi telah berakhir. Silakan input ulang.")
+                except BadRequest as e:
+                    if "Message is not modified" not in str(e):
+                        raise
         except Exception as e:
             print(f"Error setting category: {e}")
             await query.edit_message_text(f"❌ Error: {str(e)}")
