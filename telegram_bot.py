@@ -46,6 +46,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 - `/bulanan` - Laporan bulan ini
 - `/stats` - Analytics dashboard
 
+⚙️ *Pengaturan:*
+- `/setbudget [kategori] [jumlah]` - Update budget limit
+
 💡 *Contoh:*
 `/pengeluaran 50000 makan siang warteg`
 `/pemasukan 5000000 gaji bulanan`
