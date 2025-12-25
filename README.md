@@ -15,6 +15,8 @@ Bot Telegram pintar untuk mencatat keuangan (Pengeluaran, Pemasukan, Tabungan) y
     *   Perintah `/stats` untuk melihat dashboard statistik.
 4.  **☁️ Google Sheets Integration**: Semua data tersimpan aman di Google Sheets milikmu sendiri. Bisa diedit manual kapan saja.
 5.  **Budget Alert**: Peringatan jika pengeluaran melebihi budget per kategori.
+6.  **✅ Konfirmasi Interaktif**: Bot meminta konfirmasi sebelum menyimpan (Tombol Simpan/Edit/Batal).
+7.  **📉 Budgeting via Chat**: Update limit budget langsung dari Telegram (`/setbudget`).
 
 ---
 
