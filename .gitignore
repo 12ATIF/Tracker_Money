@@ -1,0 +1,6 @@
+credentials.json
+*.pyc
+__pycache__/
+*.pkl
+venv/
+.vscode/
