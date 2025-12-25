@@ -137,16 +137,14 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         confidence_emoji = "🧠" if confidence > 0.5 else "" # Added for the new message format
         
         await update.message.reply_text(
-            f"Konfirmasi✅ *Pengeluaran tercatat!*
+            f"""Konfirmasi Pengeluaran?
 
 💰 Rp {amount:,}
-� Kategori: {category} {confidence_emoji} ({int(confidence*100)}%)
+📂 Kategori: {category} {confidence_emoji} ({int(confidence*100)}%)
 📝 {description}
-📅 {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%d %b %Y, %H:%M')}
-",
-            reply_markup=reply_markup # Keep reply_markup for consistency, though the message implies it's already saved.
-                                      # Assuming this is a pre-confirmation message that was updated.
-            , parse_mode='Markdown' # Added parse_mode for markdown formatting
+📅 {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%d %b %Y, %H:%M')}""",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
         )
         
         # sheets.add_transaction(transaction) -> Moved to button_handler
