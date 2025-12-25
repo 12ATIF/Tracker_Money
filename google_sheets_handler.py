@@ -25,9 +25,14 @@ class SheetsManager:
     
     @staticmethod
     def _safe_float(value):
-        """Konversi aman ke float"""
+        """Konversi aman ke float (Handle Rp, titik separator, koma desimal)"""
         try:
-            return float(value)
+            if isinstance(value, (int, float)):
+                return float(value)
+            
+            # Bersihkan string: "Rp 50.000,00" -> "50000.00"
+            clean_val = str(value).replace('Rp', '').replace(' ', '').replace('.', '').replace(',', '.')
+            return float(clean_val)
         except (ValueError, TypeError):
             return 0.0
 

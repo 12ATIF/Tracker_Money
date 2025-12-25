@@ -298,7 +298,7 @@ async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         expense_by_cat = df[df['type'] == 'expense'].groupby('category')['amount'].agg(['sum', 'count'])
         
         cat_breakdown = "\n".join([
-            f"   • {cat}: Rp {row['sum']:,} ({int(row['count'])} transaksi)"
+            f"   • {cat}: Rp {int(row['sum']):,} ({int(row['count'])} transaksi)"
             for cat, row in expense_by_cat.iterrows()
         ]) if not expense_by_cat.empty else "   -"
         
@@ -309,12 +309,12 @@ async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📊 *RINGKASAN HARI INI*
 📅 {today.strftime('%d %b %Y')}
 
-✅ Pemasukan: Rp {income:,}
-❌ Pengeluaran: Rp {expense:,}
+✅ Pemasukan: Rp {int(income):,}
+❌ Pengeluaran: Rp {int(expense):,}
 {cat_breakdown}
-💰 Tabungan: Rp {saving:,}
+💰 Tabungan: Rp {int(saving):,}
 
-📈 Net: {net_emoji} Rp {net:,}
+📈 Net: {net_emoji} Rp {int(net):,}
         """
         
         await update.message.reply_text(response.strip(), parse_mode='Markdown')
@@ -345,7 +345,7 @@ async def monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         top_3 = expense_by_cat.head(3)
         
         top_3_text = "\n".join([
-            f"{i+1}. {cat}: Rp {amt:,}"
+            f"{i+1}. {cat}: Rp {int(amt):,}"
             for i, (cat, amt) in enumerate(top_3.items())
         ]) if not top_3.empty else "-"
         
@@ -356,10 +356,10 @@ async def monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📊 *LAPORAN BULANAN*
 📅 {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%B %Y')}
 
-💰 Total Pemasukan: Rp {income:,}
-💸 Total Pengeluaran: Rp {expense:,}
-🏦 Total Tabungan: Rp {saving:,}
-📈 Saldo Bersih: {net_emoji} Rp {net:,}
+💰 Total Pemasukan: Rp {int(income):,}
+💸 Total Pengeluaran: Rp {int(expense):,}
+🏦 Total Tabungan: Rp {int(saving):,}
+📈 Saldo Bersih: {net_emoji} Rp {int(net):,}
 
 🔥 *Top 3 Pengeluaran:*
 {top_3_text}
