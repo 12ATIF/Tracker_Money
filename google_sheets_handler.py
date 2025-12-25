@@ -169,7 +169,6 @@ class SheetsManager:
         total_spent = 0
         
         for row in rows:
-        for row in rows:
             if len(row) >= 7:
                 tx_month = self._parse_date(row[1]).strftime('%Y-%m')
                 
