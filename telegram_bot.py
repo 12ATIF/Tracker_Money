@@ -108,7 +108,7 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'expense',
             'amount': amount,
@@ -190,7 +190,7 @@ async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'income',
             'amount': amount,
@@ -250,7 +250,7 @@ async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'saving',
             'amount': amount,

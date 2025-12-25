@@ -37,6 +37,7 @@ class SheetsManager:
             return datetime.now()
             
         formats = [
+            '%Y-%m-%d %H:%M:%S',      # Standard SQL/Sheets
             '%Y-%m-%dT%H:%M:%S',      # ISO
             '%Y-%m-%d',               # ISO Date only
             '%d/%m/%Y %H:%M:%S',      # Sheet format (DD/MM/YYYY HH:MM:SS)
