@@ -1,6 +1,7 @@
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import os
 import json
 import base64
@@ -34,7 +35,7 @@ class SheetsManager:
     def _parse_date(date_str):
         """Parse multiple date formats safely"""
         if not date_str:
-            return datetime.now()
+            return datetime.now(ZoneInfo('Asia/Jakarta'))
             
         formats = [
             '%Y-%m-%d %H:%M:%S',      # Standard SQL/Sheets

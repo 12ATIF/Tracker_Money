@@ -4,6 +4,7 @@ from telegram.request import HTTPXRequest
 from telegram.error import BadRequest
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from google_sheets_handler import SheetsManager
 from model_categorization import TransactionClassifier
@@ -109,10 +110,11 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"⚠️ Low Confidence, Fallback: {category}")
         
         # Simpan sementara di context
-        transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Use simple numeric string for ID to avoid timezone complexity in ID, or just keep it simple
+        transaction_id = f"TRX-{datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y%m%d%H%M%S')}"
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'expense',
             'amount': amount,
@@ -132,11 +134,19 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        confidence_msg = f"(AI: {int(confidence*100)}%)" if confidence < 0.9 else ""
+        confidence_emoji = "🧠" if confidence > 0.5 else "" # Added for the new message format
         
         await update.message.reply_text(
-            f"Konfirmasi Pengeluaran?\n\n💰 Rp {amount:,}\n📝 {description}\n📂 {category} {confidence_msg}",
-            reply_markup=reply_markup
+            f"Konfirmasi✅ *Pengeluaran tercatat!*
+
+💰 Rp {amount:,}
+� Kategori: {category} {confidence_emoji} ({int(confidence*100)}%)
+📝 {description}
+📅 {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%d %b %Y, %H:%M')}
+",
+            reply_markup=reply_markup # Keep reply_markup for consistency, though the message implies it's already saved.
+                                      # Assuming this is a pre-confirmation message that was updated.
+            , parse_mode='Markdown' # Added parse_mode for markdown formatting
         )
         
         # sheets.add_transaction(transaction) -> Moved to button_handler
@@ -180,11 +190,11 @@ async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if category not in ['Gaji', 'Bonus']:
             category = 'Gaji'  # Default untuk income
         
-        transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        transaction_id = f"TRX-{datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y%m%d%H%M%S')}"
         
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'income',
             'amount': amount,
@@ -237,11 +247,11 @@ async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
         description = parts[1]
         user_id = update.effective_user.id
         
-        transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        transaction_id = f"TRX-{datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y%m%d%H%M%S')}"
         
         transaction = {
             'id': transaction_id,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M:%S'),
             'user_id': user_id,
             'type': 'saving',
             'amount': amount,
@@ -273,7 +283,7 @@ async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user_id = update.effective_user.id
-        today = datetime.now().date()
+        today = datetime.now(ZoneInfo('Asia/Jakarta')).date()
         
         transactions = sheets.get_transactions_by_date(user_id, today)
         
@@ -318,7 +328,7 @@ async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user_id = update.effective_user.id
-        current_month = datetime.now().strftime('%Y-%m')
+        current_month = datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y-%m')
         
         transactions = sheets.get_transactions_by_month(user_id, current_month)
         
@@ -346,7 +356,7 @@ async def monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         response = f"""
 📊 *LAPORAN BULANAN*
-📅 {datetime.now().strftime('%B %Y')}
+📅 {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%B %Y')}
 
 💰 Total Pemasukan: Rp {income:,}
 💸 Total Pengeluaran: Rp {expense:,}
@@ -365,11 +375,11 @@ Ketik /stats untuk analytics lebih detail 📊
         
         # Kirim Visualisasi Grafik
         try:
-            chart_buffer = visualizer.generate_monthly_report(transactions, datetime.now().strftime('%B %Y'))
+            chart_buffer = visualizer.generate_monthly_report(transactions, datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%B %Y'))
             if chart_buffer:
                 await update.message.reply_photo(
                     photo=chart_buffer,
-                    caption=f"📈 Visualisasi Pengeluaran - {datetime.now().strftime('%B %Y')}"
+                    caption=f"📈 Visualisasi Pengeluaran - {datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%B %Y')}"
                 )
         except Exception as e:
             print(f"❌ Error generating chart: {e}")
@@ -515,8 +525,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Update Analytics (Async optimization: do it after replying?)
         # For responsiveness, reply first then update stats in background if possible, 
-        # but here we wait to ensure consistency.
-        current_month = datetime.now().strftime('%Y-%m')
+        # Update Monthly Summary & Analytics
+        current_month = datetime.now(ZoneInfo('Asia/Jakarta')).strftime('%Y-%m')
         sheets.update_monthly_summary(trx['user_id'], current_month)
         sheets.update_analytics(trx['user_id'])
         
