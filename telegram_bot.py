@@ -1,5 +1,6 @@
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.request import HTTPXRequest
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -577,7 +578,8 @@ def main():
     print("✅ Google Sheets connected")
     print(f"📱 Bot token: {TELEGRAM_TOKEN[:10]}...")
     
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    t_request = HTTPXRequest(connection_pool_size=8, connect_timeout=60, read_timeout=60)
+    app = Application.builder().token(TELEGRAM_TOKEN).request(t_request).build()
     
     # Register handlers
     app.add_handler(CommandHandler("start", start))
