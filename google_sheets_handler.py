@@ -446,6 +446,10 @@ class SheetsManager:
     def get_training_data(self):
         """Ambil data deskripsi & kategori untuk training AI"""
         try:
+            # Load Categories map first to resolve IDs (CAT-xxx) to Names
+            categories = self.get_all_categories()
+            id_to_name = {cat['id']: cat['name'] for cat in categories}
+
             result = self.sheet.values().get(
                 spreadsheetId=self.spreadsheet_id,
                 range='Transactions!F2:G'  # F=Category, G=Description
@@ -455,15 +459,15 @@ class SheetsManager:
             training_data = []
             
             for row in rows:
-                # Pastikan row lengkap (Category, Description)
-                # Di sheet urutannya: ... Category[5], Description[6] ...
-                # Tapi range kita ambil F2:G, jadi row[0]=Category, row[1]=Description
                 if len(row) >= 2:
                     category = row[0].strip()
                     description = row[1].strip()
                     
                     if category and description:
-                        # Kita butuh format: {'description': ..., 'category': ...}
+                        # Translate ID to Name if exists
+                        if category in id_to_name:
+                            category = id_to_name[category]
+
                         training_data.append({
                             'description': description,
                             'category': category
