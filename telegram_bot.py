@@ -1,5 +1,5 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -103,9 +103,8 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
             confidence = kw_conf
             print(f"⚠️ Low Confidence, Fallback: {category}")
         
-        # Simpan transaksi
+        # Simpan sementara di context
         transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
         transaction = {
             'id': transaction_id,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -118,39 +117,29 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'payment_method': '-'
         }
         
-        sheets.add_transaction(transaction)
+        context.user_data['pending_trx'] = transaction
         
-        # Update Monthly Summary & Analytics
-        current_month = datetime.now().strftime('%Y-%m')
-        sheets.update_monthly_summary(user_id, current_month)
-        sheets.update_analytics(user_id)
+        # Kirim Konfirmasi Button
+        keyboard = [
+            [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
+            [InlineKeyboardButton("✏️ Ganti Kategori", callback_data='edit_category')],
+            [InlineKeyboardButton("❌ Batal", callback_data='cancel_trx')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Get budget status
-        budget_info = sheets.get_category_budget_status(category, user_id)
+        confidence_msg = f"(AI: {int(confidence*100)}%)" if confidence < 0.9 else ""
         
-        confidence_emoji = "🔥" if confidence > 0.85 else "✅" if confidence > 0.7 else "⚠️"
+        await update.message.reply_text(
+            f"Konfirmasi Pengeluaran?\n\n💰 Rp {amount:,}\n📝 {description}\n📂 {category} {confidence_msg}",
+            reply_markup=reply_markup
+        )
         
-        response = f"""
-✅ *Pengeluaran tercatat!*
-
-💰 Rp {amount:,}
-📂 Kategori: {category} {confidence_emoji} ({int(confidence*100)}%)
-📝 {description}
-📅 {datetime.now().strftime('%d %b %Y, %H:%M')}
-"""
+        # sheets.add_transaction(transaction) -> Moved to button_handler
+        # sheets.update_monthly_summary... -> Moved to button_handler
+        # sheets.update_analytics... -> Moved to button_handler
         
-        if budget_info:
-            remaining = budget_info['remaining']
-            percentage = budget_info['percentage']
-            
-            if remaining < 0:
-                response += f"\n⚠️ *Budget {category} terlampaui!*\nOver budget: Rp {abs(remaining):,}"
-            elif percentage > 80:
-                response += f"\n💡 Sisa budget {category}: Rp {remaining:,} ({100-percentage:.0f}% tersisa)"
-            else:
-                response += f"\n💡 Sisa budget {category}: Rp {remaining:,}"
-        
-        await update.message.reply_text(response.strip(), parse_mode='Markdown')
+        # OLD CODE REMOVED
+        # Response logic moved to button_handler
         
         
     except Exception as e:
@@ -200,23 +189,20 @@ async def add_income(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'payment_method': '-'
         }
         
-        sheets.add_transaction(transaction)
+        context.user_data['pending_trx'] = transaction
         
-        # Update summary & analytics
-        current_month = datetime.now().strftime('%Y-%m')
-        sheets.update_monthly_summary(user_id, current_month)
-        sheets.update_analytics(user_id)
+        keyboard = [
+            [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
+            [InlineKeyboardButton("❌ Batal", callback_data='cancel_trx')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        response = f"""
-✅ *Pemasukan tercatat!*
-
-💰 Rp {amount:,}
-📂 Kategori: {category}
-📝 {description}
-📅 {datetime.now().strftime('%d %b %Y, %H:%M')}
-        """
+        await update.message.reply_text(
+            f"Konfirmasi Pemasukan?\n\n💰 Rp {amount:,}\n📝 {description}\n📂 {category}",
+            reply_markup=reply_markup
+        )
         
-        await update.message.reply_text(response.strip(), parse_mode='Markdown')
+        # OLD CODE REMOVED
         
     except Exception as e:
         await update.message.reply_text(f"❌ Terjadi kesalahan sistem.\nError: {str(e)}")
@@ -260,24 +246,20 @@ async def add_saving(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'payment_method': '-'
         }
         
-        sheets.add_transaction(transaction)
+        context.user_data['pending_trx'] = transaction
         
-        # Update summary & analytics
-        current_month = datetime.now().strftime('%Y-%m')
-        sheets.update_monthly_summary(user_id, current_month)
-        sheets.update_analytics(user_id)
+        keyboard = [
+            [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
+            [InlineKeyboardButton("❌ Batal", callback_data='cancel_trx')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        response = f"""
-✅ *Tabungan tercatat!*
-
-💰 Rp {amount:,}
-📝 {description}
-📅 {datetime.now().strftime('%d %b %Y, %H:%M')}
-
-Hebat! Terus konsisten menabung! 💪
-        """
+        await update.message.reply_text(
+            f"Konfirmasi Tabungan?\n\n💰 Rp {amount:,}\n📝 {description}",
+            reply_markup=reply_markup
+        )
         
-        await update.message.reply_text(response.strip(), parse_mode='Markdown')
+        # OLD CODE REMOVED
         
     except Exception as e:
         await update.message.reply_text(f"❌ Terjadi kesalahan sistem.\nError: {str(e)}")
@@ -469,6 +451,119 @@ Butuh bantuan? Hubungi developer! 🚀
     """
     await update.message.reply_text(help_text, parse_mode='Markdown')
 
+async def set_budget(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Set budget untuk kategori tertentu"""
+    try:
+        args = ' '.join(context.args)
+        parts = args.split(' ', 1)
+        
+        if len(parts) < 2:
+            await update.message.reply_text(
+                "❌ Format salah!\n\nContoh: `/setbudget Makanan 1500000`",
+                parse_mode='Markdown'
+            )
+            return
+            
+        category = parts[0]
+        try:
+            amount = int(parts[1].replace('.', '').replace(',', ''))
+        except ValueError:
+            await update.message.reply_text("❌ Jumlah budget harus angka!")
+            return
+            
+        success, msg = sheets.update_budget(category, amount)
+        if success:
+             await update.message.reply_text(f"✅ {msg}")
+        else:
+             await update.message.reply_text(f"❌ {msg}")
+             
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle interactive buttons"""
+    query = update.callback_query
+    await query.answer() # Close loading state
+    
+    data = query.data
+    
+    # 1. CONFIRM
+    if data == 'confirm_trx':
+        trx = context.user_data.get('pending_trx')
+        if not trx:
+            await query.edit_message_text("❌ Data transaksi kadaluarsa.")
+            return
+
+        # Simpan ke Sheets
+        sheets.add_transaction(trx)
+        
+        # Update Analytics (Async optimization: do it after replying?)
+        # For responsiveness, reply first then update stats in background if possible, 
+        # but here we wait to ensure consistency.
+        current_month = datetime.now().strftime('%Y-%m')
+        sheets.update_monthly_summary(trx['user_id'], current_month)
+        sheets.update_analytics(trx['user_id'])
+        
+        # Get budget status if expense
+        budget_msg = ""
+        if trx['type'] == 'expense':
+             budget_info = sheets.get_category_budget_status(trx['category'], trx['user_id'])
+             if budget_info:
+                 remaining = budget_info['remaining']
+                 if remaining < 0:
+                     budget_msg = f"\n⚠️ *Budget Over*: Rp {abs(remaining):,}"
+                 elif budget_info['percentage'] > 80:
+                     budget_msg = f"\n💡 Sisa Budget: Rp {remaining:,}"
+
+        await query.edit_message_text(
+            f"✅ *Tersimpan!*\n\n{trx['description']}\nRp {trx['amount']:,}\n📂 {trx['category']}{budget_msg}", 
+            parse_mode='Markdown'
+        )
+        context.user_data.pop('pending_trx', None)
+
+    # 2. CANCEL
+    elif data == 'cancel_trx':
+        await query.edit_message_text("❌ Transaksi dibatalkan.")
+        context.user_data.pop('pending_trx', None)
+
+    # 3. EDIT CATEGORY (Request List)
+    elif data == 'edit_category':
+        # Show predefined categories
+        categories = ['Makanan & Minuman', 'Transport', 'Belanja', 'Tagihan', 'Hiburan', 'Kesehatan', 'Pendidikan', 'Lainnya']
+        
+        keyboard = []
+        row = []
+        for cat in categories:
+            row.append(InlineKeyboardButton(cat, callback_data=f"set_cat|{cat}"))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row: keyboard.append(row)
+            
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("📂 Pilih Kategori Baru:", reply_markup=reply_markup)
+
+    # 4. SET NEW CATEGORY
+    elif data.startswith('set_cat|'):
+        new_cat = data.split('|')[1]
+        trx = context.user_data.get('pending_trx')
+        if trx:
+            trx['category'] = new_cat
+            # Re-confirm
+            keyboard = [
+                [InlineKeyboardButton("✅ Simpan", callback_data='confirm_trx')],
+                [InlineKeyboardButton("✏️ Ganti Kategori", callback_data='edit_category')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                f"🔄 Kategori diubah jadi: *{new_cat}*\n\nSimpan sekarang?",
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+    
+
 # ==================== MAIN ====================
 
 def main():
@@ -493,6 +588,9 @@ def main():
     app.add_handler(CommandHandler("ringkasan", daily_summary))
     app.add_handler(CommandHandler("bulanan", monthly_report))
     app.add_handler(CommandHandler("stats", show_stats))
+    app.add_handler(CommandHandler("setbudget", set_budget))
+    
+    app.add_handler(CallbackQueryHandler(button_handler))
     
     print("🚀 Bot is running...")
     print("Press Ctrl+C to stop")

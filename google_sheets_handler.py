@@ -474,10 +474,47 @@ class SheetsManager:
                             'category': category
                         })
             
+            
             return training_data
         except Exception as e:
             print(f"❌ Error fetching training data: {e}")
             return []
+
+    def update_budget(self, category_name, new_limit):
+        """Update budget limit for a specific category"""
+        try:
+            # 1. Find category row
+            result = self.sheet.values().get(
+                spreadsheetId=self.spreadsheet_id,
+                range='Categories!B2:B' # Column B is Category Name
+            ).execute()
+            
+            rows = result.get('values', [])
+            row_index = -1
+            
+            for i, row in enumerate(rows):
+                if row and row[0].lower() == category_name.lower():
+                    row_index = i + 2 # +2 because 1-indexed and header row
+                    break
+            
+            if row_index == -1:
+                return False, "Kategori tidak ditemukan."
+            
+            # 2. Update Column E (Budget_Limit)
+            range_name = f'Categories!E{row_index}'
+            body = {'values': [[new_limit]]}
+            
+            self.sheet.values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=range_name,
+                valueInputOption='USER_ENTERED',
+                body=body
+            ).execute()
+            
+            return True, f"Budget {category_name} berhasil diubah jadi Rp {new_limit:,}"
+        except Exception as e:
+            print(f"Error updating budget: {e}")
+            return False, str(e)
 
 # Test script
 if __name__ == '__main__':
