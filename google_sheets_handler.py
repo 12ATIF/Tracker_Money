@@ -90,6 +90,7 @@ class SheetsManager:
             spreadsheetId=self.spreadsheet_id,
             range='Transactions!A:I',
             valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
             body=body
         ).execute()
         
