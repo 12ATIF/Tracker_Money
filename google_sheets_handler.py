@@ -30,6 +30,33 @@ class SheetsManager:
         except (ValueError, TypeError):
             return 0.0
 
+    @staticmethod
+    def _parse_date(date_str):
+        """Parse multiple date formats safely"""
+        if not date_str:
+            return datetime.now()
+            
+        formats = [
+            '%Y-%m-%dT%H:%M:%S',      # ISO
+            '%Y-%m-%d',               # ISO Date only
+            '%d/%m/%Y %H:%M:%S',      # Sheet format (DD/MM/YYYY HH:MM:SS)
+            '%d/%m/%Y'                # Short date
+        ]
+        
+        for fmt in formats:
+            try:
+                # Handle potential microseconds for ISO by splitting
+                clean_date = date_str.split('.')[0] if 'T' in date_str else date_str
+                return datetime.strptime(clean_date, fmt)
+            except ValueError:
+                continue
+                
+        # If all fail, try naive approach or return now to allow flow to continue
+        try:
+            return datetime.fromisoformat(date_str)
+        except ValueError:
+            return datetime.now()
+
     def test_connection(self):
         """Test koneksi ke spreadsheet"""
         try:
@@ -142,8 +169,9 @@ class SheetsManager:
         total_spent = 0
         
         for row in rows:
+        for row in rows:
             if len(row) >= 7:
-                tx_month = datetime.fromisoformat(row[1]).strftime('%Y-%m')
+                tx_month = self._parse_date(row[1]).strftime('%Y-%m')
                 
                 if (str(row[2]) == str(user_id) and 
                     row[3] == 'expense' and 
@@ -172,7 +200,7 @@ class SheetsManager:
         
         for row in rows:
             if len(row) >= 7:
-                tx_date = datetime.fromisoformat(row[1]).date()
+                tx_date = self._parse_date(row[1]).date()
                 if str(row[2]) == str(user_id) and tx_date == date:
                     transactions.append({
                         'id': row[0],
@@ -198,7 +226,7 @@ class SheetsManager:
         
         for row in rows:
             if len(row) >= 7:
-                tx_month = datetime.fromisoformat(row[1]).strftime('%Y-%m')
+                tx_month = self._parse_date(row[1]).strftime('%Y-%m')
                 if str(row[2]) == str(user_id) and tx_month == year_month:
                     transactions.append({
                         'id': row[0],
@@ -229,7 +257,7 @@ class SheetsManager:
         
         for row in rows:
             if len(row) >= 7:
-                tx_month = datetime.fromisoformat(row[1]).strftime('%Y-%m')
+                tx_month = self._parse_date(row[1]).strftime('%Y-%m')
                 
                 if str(row[2]) == str(user_id) and tx_month == year_month:
                     tx_type = row[3]
@@ -314,7 +342,7 @@ class SheetsManager:
             if len(row) >= 7 and str(row[2]) == str(user_id):
                 all_user_txs.append(row)
                 
-                tx_month = datetime.fromisoformat(row[1]).strftime('%Y-%m')
+                tx_month = self._parse_date(row[1]).strftime('%Y-%m')
                 if tx_month == current_month:
                     current_month_txs.append(row)
         
@@ -340,13 +368,13 @@ class SheetsManager:
         
         top_category = max(category_expenses, key=category_expenses.get) if category_expenses else '-'
         
-        last_tx_date = max([datetime.fromisoformat(row[1]) for row in current_month_txs])
+        last_tx_date = max([self._parse_date(row[1]) for row in current_month_txs])
         
         last_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         last_month_expense = sum([
             self._safe_float(row[4]) 
             for row in all_user_txs 
-            if row[3] == 'expense' and datetime.fromisoformat(row[1]).strftime('%Y-%m') == last_month
+            if row[3] == 'expense' and self._parse_date(row[1]).strftime('%Y-%m') == last_month
         ])
         
         if last_month_expense > 0:
