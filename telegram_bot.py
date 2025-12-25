@@ -4,7 +4,10 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from google_sheets_handler import SheetsManager
+from model_categorization import TransactionClassifier
+from analytics_engine import AnalyticsVisualizer
 import pandas as pd
+import io
 
 load_dotenv()
 
@@ -13,7 +16,18 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 SHEET_ID = os.getenv('GOOGLE_SHEET_ID')
 
 # Initialize
+# Initialize
 sheets = SheetsManager(SHEET_ID)
+ai_classifier = TransactionClassifier()
+visualizer = AnalyticsVisualizer()
+
+# Train AI on startup
+print("🧠 Training AI model...")
+training_data = sheets.get_training_data()
+if training_data:
+    ai_classifier.train(training_data)
+else:
+    print("⚠️ No training data found.")
 
 # ==================== COMMAND HANDLERS ====================
 
@@ -65,7 +79,20 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
         # AI Categorization (simple keyword matching)
-        category, confidence = sheets.simple_categorize(description)
+        # AI Categorization (Machine Learning + Fallback)
+        category, ai_conf = ai_classifier.predict(description)
+        
+        if category and ai_conf > 0.6:
+            # High confidence AI result
+            confidence = ai_conf
+            print(f"🤖 AI Predicted: {category} ({confidence:.2f})")
+        else:
+            # Fallback to simple keyword matching
+            category, confidence = sheets.simple_categorize(description)
+            print(f"🔍 Simple Keyword Match: {category} ({confidence:.2f})")
+            
+        # Re-train model periodically? For now, we rely on startup training.
+        # But we could trigger retraining if list grows significantly.
         
         # Simpan transaksi
         transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -339,6 +366,18 @@ Ketik /stats untuk analytics lebih detail 📊
         """
         
         await update.message.reply_text(response.strip(), parse_mode='Markdown')
+        
+        # Kirim Visualisasi Grafik
+        try:
+            chart_buffer = visualizer.generate_monthly_report(transactions, datetime.now().strftime('%B %Y'))
+            if chart_buffer:
+                await update.message.reply_photo(
+                    photo=chart_buffer,
+                    caption=f"📈 Visualisasi Pengeluaran - {datetime.now().strftime('%B %Y')}"
+                )
+        except Exception as e:
+            print(f"❌ Error generating chart: {e}")
+            # Jangan crash hanya karena grafik gagal, cukup log saja
         
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
