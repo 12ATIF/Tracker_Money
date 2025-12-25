@@ -79,20 +79,29 @@ async def add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
         # AI Categorization (simple keyword matching)
-        # AI Categorization (Machine Learning + Fallback)
-        category, ai_conf = ai_classifier.predict(description)
+        # 1. Coba AI Prediction
+        ai_category, ai_conf = ai_classifier.predict(description)
         
-        if category and ai_conf > 0.6:
-            # High confidence AI result
+        # 2. Coba Keyword Matching (Rules-based) -> lebih prioritas jika pasti
+        kw_category, kw_conf = sheets.simple_categorize(description)
+        
+        # Logika Keputusan:
+        # - Jika Keyword match sangat kuat (>0.8), pakai Keyword (misal: "gaji", "makan")
+        # - Jika AI sangat yakin (>0.6) DAN Keyword lemah, pakai AI
+        # - Default: Lainnya
+        
+        if kw_conf >= 0.8:
+            category = kw_category
+            confidence = kw_conf
+            print(f"✅ Rules Applied: {category} ({confidence:.2f})")
+        elif ai_category and ai_conf > 0.5:
+            category = ai_category
             confidence = ai_conf
-            print(f"🤖 AI Predicted: {category} ({confidence:.2f})")
+            print(f"🤖 AI Selected: {category} ({confidence:.2f})")
         else:
-            # Fallback to simple keyword matching
-            category, confidence = sheets.simple_categorize(description)
-            print(f"🔍 Simple Keyword Match: {category} ({confidence:.2f})")
-            
-        # Re-train model periodically? For now, we rely on startup training.
-        # But we could trigger retraining if list grows significantly.
+            category = kw_category # Default 'Lainnya' 0.5
+            confidence = kw_conf
+            print(f"⚠️ Low Confidence, Fallback: {category}")
         
         # Simpan transaksi
         transaction_id = f"TRX-{datetime.now().strftime('%Y%m%d%H%M%S')}"

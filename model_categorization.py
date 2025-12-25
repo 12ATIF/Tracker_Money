@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.calibration import CalibratedClassifierCV
 import pickle
 import os
 
@@ -23,10 +24,16 @@ class TransactionClassifier:
             
         df = pd.DataFrame(transactions)
         
-        # Simple pipeline: TF-IDF -> Linear SVM (SGD)
+        # Pipeline with Calibration to get probabilities
+        sgd = SGDClassifier(loss='hinge', penalty='l2', alpha=1e-3, random_state=42, max_iter=5, tol=None)
+        calibrated_clf = CalibratedClassifierCV(sgd, method='sigmoid', cv='prefit') 
+        # Note: cv='prefit' is WRONG if we haven't fit sgd yet. 
+        # Actually CalibratedClassifierCV(cv=2) handles internal splitting.
+        
+        # Better approach for small data: Use SGD with 'log_loss' (Logistic Regression equivalent)
         self.model = Pipeline([
             ('tfidf', TfidfVectorizer(ngram_range=(1, 2), min_df=1)),
-            ('clf', SGDClassifier(loss='hinge', penalty='l2', alpha=1e-3, random_state=42, max_iter=5, tol=None))
+            ('clf', SGDClassifier(loss='log_loss', penalty='l2', alpha=1e-3, random_state=42, max_iter=10, tol=None))
         ])
         
         try:
@@ -47,13 +54,11 @@ class TransactionClassifier:
             return None, 0.0
             
         try:
-            # SGD with hinge loss doesn't give probability directly, 
-            # so we use decision_function as a proxy for confidence or just simple prediction
-            prediction = self.model.predict([description])[0]
+            # Get probability
+            probs = self.model.predict_proba([description])[0]
+            max_prob = np.max(probs)
+            prediction = self.model.classes_[np.argmax(probs)]
             
-            # Since we can't easily get exact probability from simple SGD without calibration,
-            # we will return a fixed high confidence if it predicts anything.
-            # Ideally use CalibratedClassifierCV if proba needed, but keep it simple.
-            return prediction, 0.85
+            return prediction, max_prob
         except Exception:
             return None, 0.0
