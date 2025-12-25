@@ -441,10 +441,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 *Laporan:*
 - `/ringkasan` - Ringkasan hari ini
 - `/bulanan` - Laporan bulan ini
+- `/bulanan` - Laporan bulan ini
 - `/stats` - Analytics dashboard
+
+*Pengaturan Budget:*
+- `/setbudget [kategori] [jumlah]`
+  Contoh: `/setbudget Makanan 1500000`
 
 *Tips:*
 - Bot otomatis mendeteksi kategori
+- "Simpan" hanya jika kategori sudah benar. Gunakan tombol "Ganti Kategori" jika salah.
 - Gunakan kata kunci seperti "makan", "bensin", "gaji"
 - Batas budget dapat di-set di Google Sheets
 
