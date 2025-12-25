@@ -26,6 +26,7 @@ Bot Telegram pintar untuk mencatat keuangan (Pengeluaran, Pemasukan, Tabungan) y
 | **Pengeluaran** | `/pengeluaran [jumlah] [ket]` | `/pengeluaran 25000 nasi padang` |
 | **Pemasukan** | `/pemasukan [jumlah] [ket]` | `/pemasukan 5000000 gaji agustus` |
 | **Tabungan** | `/nabung [jumlah] [ket]` | `/nabung 500000 dana darurat` |
+| **Set Budget** | `/setbudget [kategori] [jumlah]` | `/setbudget Makanan 1500000` |
 
 ### 2. Laporan & Analisis
 | Perintah | Deskripsi |
