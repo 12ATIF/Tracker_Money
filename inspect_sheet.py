@@ -22,14 +22,24 @@ try:
         title = props['title']
         print(f"- '{title}'")
 
-    print("\nReading last 5 rows of Transactions:")
+    print("\nReading ALL Categories:")
     result = mgr.sheet.values().get(
         spreadsheetId=SHEET_ID,
-        range='Transactions!A1:I', # Read all to find last
+        range='Categories!A2:F', 
     ).execute()
     rows = result.get('values', [])
-    print(f"Total rows found: {len(rows)}")
-    for row in rows[-5:]:
+    for row in rows:
+        # ID, Name, Type, Icon, Limit, Keywords
+        if len(row) >= 6:
+            print(f"Cat: {row[1]} | Keywords: {row[5]}")
+
+    print("\nReading Transactions sheet first 5 rows (to check existing categories):")
+    result = mgr.sheet.values().get(
+        spreadsheetId=SHEET_ID,
+        range='Transactions!A1:F5', 
+    ).execute()
+    rows = result.get('values', [])
+    for row in rows:
         print(row)
         
 except Exception as e:
