@@ -631,7 +631,7 @@ def main():
     print("✅ Google Sheets connected")
     print(f"📱 Bot token: {TELEGRAM_TOKEN[:10]}...")
     
-    t_request = HTTPXRequest(connection_pool_size=8, connect_timeout=60, read_timeout=60)
+    t_request = HTTPXRequest(connection_pool_size=8, connect_timeout=180, read_timeout=180)
     app = Application.builder().token(TELEGRAM_TOKEN).request(t_request).build()
     
     # Register handlers
